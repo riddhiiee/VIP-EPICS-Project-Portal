@@ -1,0 +1,101 @@
+body {
+  min-height: 100vh;
+  margin: 0;
+  padding: 0;
+  color: white;
+  font-family: "Segoe UI", "Roboto", Arial, sans-serif;
+  background: linear-gradient(180deg, #ffffff 0%, #8ec5fc 100%);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+.container {
+  background: #051650;
+  box-shadow: 0 16px 56px rgba(56,60,180,0.13), 0 2px 4px rgba(80,80,120,0.11);
+  border-radius: 24px;
+  max-width: 600px;
+  width: 100%;
+  padding: 40px 36px 32px;
+  margin: auto;
+  position: relative;
+  z-index: 2;
+}
+h2 {
+
+  font-size: 2rem;
+  color: #ffffff;
+  text-align: center;
+  font-weight: 700;
+  margin-bottom: 2.5rem;
+  letter-spacing: 0.7px;
+}
+.register-form {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 22px 18px;
+}
+input, select {
+  padding: 12px 13px;
+  border-radius: 10px;
+  border: none;
+  background: #f0edfc;
+  box-shadow: 0 0.5px 2px rgba(80,80,130,0.13);
+  font-size: 1rem;
+  color: #381c68;
+  outline: none;
+  transition: box-shadow 0.24s;
+}
+input:focus, select:focus {
+  background: #eceaff;
+  box-shadow: 0 0 0 2px #b9abfd;
+}
+input[type="password"] {
+  letter-spacing: 0.08em;
+}
+button {
+  grid-column: 1 / span 2;
+  margin-top: 18px;
+  padding: 12px 0;
+  background: #58a2ed;
+  color: white;
+  border-radius: 12px;
+  border: none;
+  font-size: 1.09rem;
+  font-weight: 600;
+  letter-spacing: 1.2px;
+  box-shadow: 0 4px 16px rgba(76,58,182,0.14);
+  cursor: pointer;
+  transition: background 0.2s, transform 0.22s;
+}
+button:hover {
+  background: gray;
+  transform: translateY(-2px) scale(1.025);
+}
+.error {
+  grid-column: 1 / span 2;
+  color: #ff5367;
+  background: #fff8fa;
+  border-radius: 8px;
+  margin-top: 6px;
+  padding: 8px 0;
+  text-align: center;
+  font-weight: 500;
+}
+.success {
+  grid-column: 1 / span 2;
+  color: #4cbb17;
+  font-weight: 600;
+  font-size: 1.2rem;
+  text-align: center;
+}
+@media (max-width: 700px) {
+  .container {
+    padding: 18px 6vw 18px;
+    max-width: 98vw;
+  }
+  .register-form {
+    grid-template-columns: 1fr;
+    gap: 14px 8px;
+  }
+  button { grid-column: 1 / span 1; }
+}
