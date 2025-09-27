@@ -46,6 +46,17 @@ export default function RegisterForm() {
 
     setError("");
     setRegistered(true);
+    const payload = { ...formData };
+    delete payload.confirmPassword;
+
+    fetch("http://127.0.0.1:8000/core/student/", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload)   
+    })
+    .then(res => res.json())
+    .then(data => console.log("Saved:", data))
+    .catch(err => console.error(err));
   }
 
   return (
