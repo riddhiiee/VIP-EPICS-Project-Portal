@@ -10,6 +10,13 @@ class Faculty(models.Model):
     def __str__(self):
         return self.name
     
+class Project(models.Model):
+    title = models.CharField(max_length=200)
+    description = models.TextField()
+    faculty = models.ForeignKey(Faculty, on_delete=models.CASCADE, related_name="projects")
+
+    def __str__(self):
+        return self.title
 
 class Student(models.Model):
     sapid = models.CharField(max_length=11, unique=True)
@@ -23,4 +30,17 @@ class Student(models.Model):
     def __str__(self):
         return self.name
     
-    
+class Application(models.Model):
+    STATUS_CHOICES = [
+        ('Pending', 'Pending'),
+        ('Accepted', 'Accepted'),
+        ('Rejected', 'Rejected'),
+    ]
+    student = models.ForeignKey(Student, on_delete=models.CASCADE)
+    faculty = models.ForeignKey(Faculty, on_delete=models.CASCADE)
+    project = models.ForeignKey(Project, on_delete=models.SET_NULL, null=True, blank=True)
+    status = models.CharField(max_length=10, choices=STATUS_CHOICES, default='Pending')
+    applied_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.student} → {self.project} ({self.status})"
