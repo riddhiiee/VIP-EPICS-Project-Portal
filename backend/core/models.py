@@ -32,11 +32,10 @@ class Student(models.Model):
     division = models.CharField(max_length=1)
     password = models.CharField(max_length=100)
     campus = models.CharField(max_length=100)
-    faculty = models.ForeignKey(Faculty, on_delete=models.CASCADE)
-
+    faculty = models.ForeignKey(Faculty, on_delete=models.CASCADE, null=True, blank=True)
 
     def __str__(self):
-        return self.name
+        return self.fullname
     
 class Application(models.Model):
     STATUS_CHOICES = [

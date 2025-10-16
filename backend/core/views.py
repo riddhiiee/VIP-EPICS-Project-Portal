@@ -3,6 +3,9 @@ from rest_framework.response import Response
 from rest_framework import status
 from .models import Student
 from .serializer import StudentSerializer
+from rest_framework import generics
+from .models import Faculty
+from .serializer import FacultySerializer 
 
 # from json to python
 # we write our endpoints here
@@ -18,3 +21,9 @@ def post_student(request):
         serializer.save()
         return Response(serializer.data, status=status.HTTP_201_CREATED)
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+
+class FacultyListAPIView(generics.ListAPIView):
+    queryset = Faculty.objects.all()
+    serializer_class = FacultySerializer
