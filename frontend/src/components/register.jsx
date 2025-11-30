@@ -14,7 +14,10 @@ export default function RegisterForm() {
     division: "",
     year: "",
     semester: "",
-    campus: ""
+    campus: "",
+    group: "",       
+    faculty: "",     
+    project: ""
   });
 
   const [error, setError] = useState("");
@@ -22,22 +25,15 @@ export default function RegisterForm() {
   const [facultyList, setFacultyList] = useState([]);
   const [selectedGroup, setSelectedGroup] = useState("");
   const [selectedFaculty, setSelectedFaculty] = useState("");
-  const [projectName, setProjectName] = useState("");
+  const [projectNames, setProjectNames] = useState([]);
   const [facultyDept, setFacultyDept] = useState("");
 
-  // Dummy group list, replace later with backend values if needed
-  const groupOptions = ["VIP", "EPICS", "Group3", "Group4", "Group5"];
-
-  // Fetch faculty from API (simulated for now)
+  // Fetch faculty from API
   useEffect(() => {
-    // Example fetch:
-    // axios.get("/core/faculties/").then(res => setFacultyList(res.data));
-    // For now use dummy data
-    setFacultyList([
-      { id: 1, name: "ABC", department: "CS", group: "VIP", project: "VIP AI" },
-      { id: 2, name: "XYZ", department: "IT", group: "EPICS", project: "EPICS Health" }
-      // More dummy or fetched objects...
-    ]);
+    fetch("http://127.0.0.1:8000/core/faculties/") // Django GET endpoint
+      .then((response) => response.json())
+      .then((data) => setFacultyList(data))
+      .catch((error) => console.error("Error fetching faculty list:", error));
   }, []);
 
   function handleChange(event) {
@@ -47,9 +43,9 @@ export default function RegisterForm() {
   function handleSubmit(event) {
     event.preventDefault();
     if (
-      !formData.username ||  !formData.fullname ||  !formData.email ||  !formData.sapid ||  !formData.password ||
-      !formData.confirmPassword ||  !formData.degree ||  !formData.department ||  !formData.division ||
-      !formData.year ||  !formData.semester ||  !formData.campus
+      !formData.username || !formData.fullname || !formData.email || !formData.sapid || !formData.password ||
+      !formData.confirmPassword || !formData.degree || !formData.department || !formData.division ||
+      !formData.year || !formData.semester || !formData.campus
     ) {
       setError("Fill all fields!");
       return;
@@ -63,45 +59,76 @@ export default function RegisterForm() {
       return;
     }
     setError("");
-    setRegistered(true);
     const payload = { ...formData };
     delete payload.confirmPassword;
+
     fetch("http://127.0.0.1:8000/core/student/", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload)  
+      body: JSON.stringify(payload)
     })
-    .then(res => res.json())
-    .then(data => console.log("Saved:", data))
-    .catch(err => console.error(err));
-  
-  }
-    
-
-  // Filter faculties by selected group (for dropdown)
-  const filteredFacultyList = facultyList.filter(fac =>
-    fac.group === selectedGroup
-  );
-
-  function handleGroupChange(event) {
-    setSelectedGroup(event.target.value);
-    setSelectedFaculty("");
-    setProjectName("");
-    setFacultyDept("");
-  }
-  function handleFacultyChange(event) {
-    setSelectedFaculty(event.target.value);
-    const fac = facultyList.find(f => f.name === event.target.value && f.group === selectedGroup);
-    setProjectName(fac ? fac.project : "");
-    setFacultyDept(fac ? fac.department : "");
-  }
-  function registerClicked() {
-    alert("Registered!");
+      .then(res => res.json())
+      .then(data => console.log("Saved:", data))
+      .catch(err => console.error(err));
+    setRegistered(true);
   }
 
- 
- 
-    
+function handleGroupChange(event) {
+  const group = event.target.value;
+  setSelectedGroup(group);
+  setSelectedFaculty("");
+  setProjectNames([]);
+  setFacultyDept("");
+  setFormData(prev => ({ ...prev, group }));
+}
+
+function handleFacultyChange(event) {
+  const facultyId = event.target.value;
+  setSelectedFaculty(facultyId);
+  setFormData(prev => ({ ...prev, faculty: facultyId }));
+  const fac = facultyList.find(f => String(f.id) === String(facultyId) && f.group && f.group.name === selectedGroup);
+  setFacultyDept(fac ? fac.department : "");
+
+  const projects = fac && fac.projects ? [{ id: fac.projects.id, title: fac.projects.title }] : [];
+  setProjectNames(projects.map(p => p.title));
+
+  setFormData(prev => ({ ...prev, project: projects.length ? projects[0].id : "" }));
+}
+
+function registerClicked() {
+  if (!formData.sapid) {
+    alert("SAP ID missing! Fill the form first.");
+    return;
+  }
+
+  const groupId = facultyList.find(f => f.group && f.group.name === selectedGroup)?.group?.id || null;
+
+  fetch("http://127.0.0.1:8000/core/applications/", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      student_sapid: formData.sapid,
+      faculty: selectedFaculty,
+      project: formData.project,
+      group: groupId
+    }),
+  })
+    .then(async (res) => {
+      const data = await res.json();
+      if (!res.ok) throw data;
+      console.log("Application submitted:", data);
+      alert("Application submitted successfully! Await faculty approval.");
+    })
+    .catch(err => {
+      console.error(err);
+      alert(err.detail || "Application failed. Check console.");
+    });
+}
+
+
+
+const filteredFacultyList = facultyList.filter(f => f.group && f.group.name === selectedGroup);
+
   return (
     <div className="container">
       <h2>Student Registration</h2>
@@ -145,39 +172,43 @@ export default function RegisterForm() {
           <h2>Select Your Project</h2>
           <form className="register-form">
             <div className="select-row">
-              <div className="select-col">
-                <label>Choose a Project Group:</label>
-                <select value={selectedGroup} onChange={handleGroupChange}>
-                  <option value="">Select group</option>
-                  {groupOptions.map(group => (
-                    <option key={group} value={group}>{group}</option>
-                  ))}
-                </select>
-              </div>
-              <div className="select-col">
-                <label>Choose Faculty:</label>
-                <select value={selectedFaculty} onChange={handleFacultyChange} disabled={!selectedGroup}>
+            <div className="select-col">
+              <label>Choose Group:</label>
+              <select value={selectedGroup} onChange={handleGroupChange}>
+                <option value="">Select group</option>
+                {[...new Set(facultyList.map(f => f.group && f.group.name))].map(group => (
+                  group && <option key={group} value={group}>{group}</option>
+                ))}
+              </select>
+            </div>
+            <div className="select-col">
+              <label>Choose Faculty:</label>
+              <select value={selectedFaculty} onChange={handleFacultyChange} disabled={!selectedGroup}>
                   <option value="">Select faculty</option>
                   {filteredFacultyList.map(faculty => (
-                    <option key={faculty.id} value={faculty.name}>{faculty.name}</option>
+                    <option key={faculty.id} value={faculty.id}>{faculty.name}</option>
                   ))}
-                </select>
-              </div>
+              </select>
+
             </div>
+          </div>
+
             {selectedFaculty && (
               <div className="info-row">
-                <div><strong>Project:</strong> {projectName}</div>
+                <div><strong>Projects:</strong> {projectNames.join(", ")}</div>
                 <div><strong>Department:</strong> {facultyDept}</div>
               </div>
             )}
+
             <button type="button" onClick={registerClicked}>Register</button>
           </form>
-
         </div>
       )}
+
       <p style={{ textAlign: "center", marginTop: "15px" }}>
         Already have an account? <a href="#">Login</a>
       </p>
     </div>
   );
-} 
+}
+
