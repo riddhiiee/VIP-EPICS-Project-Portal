@@ -18,6 +18,10 @@ from django.contrib import admin
 from django.urls import path,include
 from django.contrib.auth import views as auth_views
 
+admin.site.site_header = "Project Portal"
+admin.site.site_title = "Admin"
+admin.site.index_title = "Dashboard"
+
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('core/', include('core.urls')),

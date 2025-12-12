@@ -1,14 +1,18 @@
 import React from "react";
 import { useNavigate } from "react-router-dom";
-import "./home.css"; // Use a separate CSS file for styles
+import "./home.css";
 
 export default function Home() {
   const navigate = useNavigate();
 
+  const handleFacultyLogin = () => {
+    // open Django admin login directly
+    window.location.href = "http://127.0.0.1:8000/admin/";
+  };
+
   return (
     <div className="home-background">
       <div className="home-card">
-        {/* Optional: Add your portal's logo */}
         <h1 className="portal-title">VIP-EPICS Project Portal</h1>
         <div className="portal-btn-group">
           <button className="portal-btn" onClick={() => navigate("/register")}>
@@ -17,7 +21,7 @@ export default function Home() {
           <button className="portal-btn" onClick={() => navigate("/login-student")}>
             Login as Student
           </button>
-          <button className="portal-btn" onClick={() => navigate("/login-faculty")}>
+          <button className="portal-btn" onClick={handleFacultyLogin}>
             Login as Faculty
           </button>
         </div>
