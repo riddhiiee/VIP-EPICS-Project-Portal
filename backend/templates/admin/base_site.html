@@ -13,7 +13,9 @@
 
 {% block extrahead %}
   {{ block.super }}
-  <script src="{% static 'core/chatbot.js' %}"></script>
+  {% if user.is_authenticated %}
+    <script src="{% static 'core/chatbot.js' %}"></script>
+  {% endif %}
 {% endblock %}
 
 {% block nav-global %}{% endblock %}
