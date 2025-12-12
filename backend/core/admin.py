@@ -67,3 +67,4 @@ class ProjectAdmin(admin.ModelAdmin):
         if hasattr(request.user, 'faculty'):
             return qs.filter(faculty=request.user.faculty)
         return qs.none()
+    

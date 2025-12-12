@@ -5,6 +5,8 @@ from rest_framework.views import APIView
 from rest_framework import status, generics
 from .models import Student, Faculty, Application, Project, ProjectGroup
 from .serializer import StudentSerializer, FacultySerializer, ApplicationSerializer
+from django.core.mail import send_mail
+
 
 @api_view(['POST'])
 def student_login(request):
@@ -61,28 +63,23 @@ class ApplicationListCreateAPIView(APIView):
 
         existing_app = Application.objects.filter(student=student).first()
 
-        # Case 1: First time applying → allow
+        # Case 1: Student never applied → ALLOW
         if existing_app is None:
-            pass
+            pass  # continue
 
-        # Case 2: Pending → block
+        # Case 2: Pending → BLOCK
         elif existing_app.status == "Pending":
-            return Response(
-                {"detail": "Your previous application is still pending. You cannot apply again."},
-                status=status.HTTP_400_BAD_REQUEST
-            )
+            return Response({"detail": "Your previous application is still pending. You cannot apply again."},
+                            status=status.HTTP_400_BAD_REQUEST)
 
-        # Case 3: Accepted → block
+        # Case 3: Accepted → BLOCK
         elif existing_app.status == "Accepted":
-            return Response(
-                {"detail": "You are already accepted in a project. You cannot apply again."},
-                status=status.HTTP_400_BAD_REQUEST
-            )
+            return Response({"detail": "You are already accepted in a project. Cannot apply again."},
+                            status=status.HTTP_400_BAD_REQUEST)
 
-        # Case 4: Rejected → allow (but clear old rejected)
+        # Case 4: Rejected → ALLOW re-apply
         elif existing_app.status == "Rejected":
-            existing_app.delete()
-
+            existing_app.delete()  # remove old rejected application
 
         faculty_id = request.data.get('faculty')
         project_id = request.data.get('project')
@@ -120,7 +117,7 @@ class ApplicationDetailAPIView(APIView):
         app = self.get_object(pk)
         if not app:
             return Response({"detail": "Not found"}, status=status.HTTP_404_NOT_FOUND)
-
+        old_status = app.status # track of current status
         new_status = request.data.get('status', app.status)
         faculty_id = request.data.get('faculty')
         project_id = request.data.get('project')
@@ -136,6 +133,41 @@ class ApplicationDetailAPIView(APIView):
         app.status = new_status
         app.save()
 
+        # Send email if status changed
+        student_email = app.student.email
+        student_name = app.student.fullname
+        faculty_name = app.faculty.name
+
+        # Only send email when status actually changes
+        if new_status != old_status:
+
+            # Accepted Email
+            if new_status == "Accepted":
+                print("Sending accected email to:", student_email) 
+                send_mail(
+                    subject="Your Project Application is Accepted",
+                    message=f"Hello {student_name},\n\n"
+                            f"Good news! Your application for the project under {faculty_name} has been ACCEPTED.\n\n"
+                            "You can now proceed with your next steps.\n\n"
+                            "Regards,\nUniversity Portal",
+                    from_email=None,  # uses DEFAULT_FROM_EMAIL
+                    recipient_list=[student_email],
+                    fail_silently=False
+                )
+
+            # Rejected Email
+            elif new_status == "Rejected":
+                print("Sending rejection email to:", student_email) 
+                send_mail(
+                    subject="Your Project Application is Rejected",
+                    message=f"Hello {student_name},\n\n"
+                            f"Your application for the project under {faculty_name} has been REJECTED.\n\n"
+                            "You may apply again from the student portal.\n\n"
+                            "Regards,\nUniversity Portal",
+                    from_email=None,
+                    recipient_list=[student_email],
+                    fail_silently=True
+              )
         return Response(ApplicationSerializer(app).data)
 
     def delete(self, request, pk):

@@ -7,6 +7,7 @@ import string
 from django.core.mail import send_mail
 from django.conf import settings
 
+
 @receiver(post_save, sender=Faculty)
 def create_user_for_faculty(sender, instance, created, **kwargs):
     """
