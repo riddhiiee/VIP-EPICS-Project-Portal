@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { Eye, EyeOff } from 'lucide-react';
 import "../App.css";
 
 export default function RegisterForm() {
@@ -20,13 +21,15 @@ export default function RegisterForm() {
     project: ""
   });
 
-  const [error, setError] = useState("");
-  const [registered, setRegistered] = useState(false);
-  const [facultyList, setFacultyList] = useState([]);
-  const [selectedGroup, setSelectedGroup] = useState("");
-  const [selectedFaculty, setSelectedFaculty] = useState("");
-  const [projectNames, setProjectNames] = useState([]);
-  const [facultyDept, setFacultyDept] = useState("");
+const [error, setError] = useState("");
+const [registered, setRegistered] = useState(false);
+const [facultyList, setFacultyList] = useState([]);
+const [selectedGroup, setSelectedGroup] = useState("");
+const [selectedFaculty, setSelectedFaculty] = useState("");
+const [projectNames, setProjectNames] = useState([]);
+const [facultyDept, setFacultyDept] = useState("");
+const [showPassword, setShowPassword] = useState(false);
+const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   // Fetch faculty from API
   useEffect(() => {
@@ -39,6 +42,16 @@ export default function RegisterForm() {
   function handleChange(event) {
     setFormData({ ...formData, [event.target.name]: event.target.value });
   }
+
+  const passwordValidations = {
+  minLength: formData.password.length >= 8,
+  hasUpperCase: /[A-Z]/.test(formData.password),
+  hasLowerCase: /[a-z]/.test(formData.password),
+  hasNumber: /\d/.test(formData.password),
+  hasSpecialChar: /[!@#$%^&*(),.?":{}|<>]/.test(formData.password),
+};
+
+const allPasswordValid = Object.values(passwordValidations).every(Boolean);
 
   function handleSubmit(event) {
     event.preventDefault();
@@ -58,6 +71,10 @@ export default function RegisterForm() {
       setError("SAP ID must be 11 digits.");
       return;
     }
+    if (!allPasswordValid) {
+      setError("Password must be 8+ chars with uppercase, lowercase, number & special char!");
+      return;
+}
     setError("");
     const payload = { ...formData };
     delete payload.confirmPassword;
@@ -125,8 +142,6 @@ function registerClicked() {
     });
 }
 
-
-
 const filteredFacultyList = facultyList.filter(f => f.group && f.group.name === selectedGroup);
 
   return (
@@ -138,8 +153,18 @@ const filteredFacultyList = facultyList.filter(f => f.group && f.group.name === 
           <input name="fullname" placeholder="Fullname" value={formData.fullname} onChange={handleChange} required />
           <input name="email" placeholder="Email" value={formData.email} onChange={handleChange} required />
           <input name="sapid" placeholder="SAP ID" maxLength={11} value={formData.sapid} onChange={handleChange} required />
-          <input name="password" type="password" placeholder="Password" value={formData.password} onChange={handleChange} required />
-          <input name="confirmPassword" type="password" placeholder="Confirm Password" value={formData.confirmPassword} onChange={handleChange} required />
+          <div className="password-input-wrapper">
+            <input name="password" type={showPassword ? 'text' : 'password'} placeholder="Password" value={formData.password} onChange={handleChange} required />
+            <button type="button" className="password-toggle-btn" onClick={() => setShowPassword(!showPassword)}>
+              {showPassword ? <EyeOff /> : <Eye />}
+            </button>
+          </div>
+          <div className="password-input-wrapper">
+            <input name="confirmPassword" type={showConfirmPassword ? 'text' : 'password'} placeholder="Confirm Password" value={formData.confirmPassword} onChange={handleChange} required />
+            <button type="button" className="password-toggle-btn" onClick={() => setShowConfirmPassword(!showConfirmPassword)}>
+              {showConfirmPassword ? <EyeOff /> : <Eye />}
+            </button>
+          </div>
           <select name="degree" value={formData.degree} onChange={handleChange} required>
             <option value="">Degree</option>
             <option>BTI</option>

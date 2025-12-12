@@ -67,10 +67,7 @@ button {
   cursor: pointer;
   transition: background 0.2s, transform 0.22s;
 }
-button:hover {
-  background: gray;
-  transform: translateY(-2px) scale(1.025);
-}
+
 .error {
   grid-column: 1 / span 2;
   color: #ff5367;
@@ -102,7 +99,7 @@ button:hover {
 
 /* --- These override/add on to your .register-form for project selection --- */
 
-/.select-row {
+.select-row {
   grid-column: 1 / span 2;
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -159,4 +156,27 @@ button {
   .select-col select {
     width: 100%;
   }
+}
+.password-input-wrapper {
+  position: relative;
+  width: 100%;
+  display: flex;
+  align-items: center;
+}
+
+.password-input-wrapper input {
+  width: 100%;/* Make space for the eye icon */
+}
+
+.password-toggle-btn {
+  position: absolute;
+  right: 10px;
+  background: none;
+  border: none;
+  margin-bottom: 20px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  color: #381c68; /* Match your input text color */
+  z-index: 10; /* Ensure button is on top */
 }
