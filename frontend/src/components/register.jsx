@@ -143,7 +143,8 @@ function registerClicked() {
 }
 
 const filteredFacultyList = facultyList.filter(f => f.group && f.group.name === selectedGroup);
-
+const groupOptions = [...new Set(facultyList.map(f => f.group && f.group.name))];
+console.log("groupOptions:", groupOptions);
   return (
     <div className="container">
       <h2>Student Registration</h2>
@@ -201,8 +202,8 @@ const filteredFacultyList = facultyList.filter(f => f.group && f.group.name === 
               <label>Choose Group:</label>
               <select value={selectedGroup} onChange={handleGroupChange}>
                 <option value="">Select group</option>
-                {[...new Set(facultyList.map(f => f.group && f.group.name))].map(group => (
-                  group && <option key={group} value={group}>{group}</option>
+                {groupOptions.map(group => (
+                group && <option key={group} value={group}>{group}</option>
                 ))}
               </select>
             </div>

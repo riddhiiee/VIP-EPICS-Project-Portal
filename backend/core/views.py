@@ -4,6 +4,7 @@ from rest_framework.views import APIView
 from rest_framework import status, generics
 from .models import Student, Faculty, Application, Project, ProjectGroup
 from .serializer import StudentSerializer, FacultySerializer, ApplicationSerializer
+from django.contrib.auth import authenticate, login
 
 
 @api_view(['POST'])
@@ -104,3 +105,16 @@ class ApplicationDetailAPIView(APIView):
             return Response({"detail": "Not found"}, status=status.HTTP_404_NOT_FOUND)
         app.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class FacultyLoginAPIView(APIView):
+    def post(self, request):
+        username = request.data.get("username")
+        password = request.data.get("password")
+
+        user = authenticate(request, username=username, password=password)
+        if user is None or not user.is_staff:
+            return Response({"detail": "Invalid credentials"}, status=status.HTTP_400_BAD_REQUEST)
+
+        login(request, user)  # creates session cookie
+        return Response({"detail": "ok"}, status=status.HTTP_200_OK)

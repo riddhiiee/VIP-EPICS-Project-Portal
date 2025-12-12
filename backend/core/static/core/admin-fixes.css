@@ -1,0 +1,47 @@
+/* Bulk actions bar layout and text */
+#changelist-form .actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+#changelist-form .actions select {
+  max-width: 240px;
+  color: #000000 !important;
+  background-color: #ffffff !important;
+}
+
+/* Ensure the Run button is always visible */
+#changelist-form .actions button,
+#changelist-form .actions input[type="submit"] {
+  display: inline-block !important;
+  visibility: visible !important;
+}
+
+/* Add border ONLY if input has no border (so we don't break Unfold) */
+.unfold input[type="text"],
+.unfold input[type="email"],
+.unfold input[type="password"],
+.unfold input[type="number"],
+.unfold input[type="url"],
+.unfold input[type="search"],
+.unfold input[type="tel"],
+.unfold input[type="datetime-local"],
+.unfold textarea,
+.unfold select,
+input.vTextField {
+  border: 1px solid #9ca3af;
+  border-radius: 4px;
+  background-color: #ffffff;
+  color: #000000;
+}
+
+/* Stronger outline on focus */
+.unfold input:focus,
+.unfold textarea:focus,
+.unfold select:focus,
+input.vTextField:focus {
+  outline: 2px solid #2563eb;
+  outline-offset: 1px;
+}

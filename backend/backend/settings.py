@@ -12,6 +12,7 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 import os
 from dotenv import load_dotenv
 from pathlib import Path
+from django.templatetags.static import static
 
 load_dotenv()  # take environment variables from .env.
 
@@ -35,6 +36,7 @@ OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 # Application definition
 
 INSTALLED_APPS = [
+    'unfold', 
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -146,3 +148,38 @@ EMAIL_USE_TLS = True
 EMAIL_HOST_USER = "s111surbhi@gmail.com"
 EMAIL_HOST_PASSWORD = os.getenv("EMAIL_HOST_PASSWORD")
 DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
+
+REST_FRAMEWORK = {
+    "DEFAULT_AUTHENTICATION_CLASSES": [
+        "rest_framework.authentication.SessionAuthentication",
+    ],
+}
+
+CORS_ALLOW_CREDENTIALS = True
+CORS_ALLOWED_ORIGINS = ["http://localhost:5173"]
+CSRF_TRUSTED_ORIGINS = ["http://localhost:5173"]
+
+
+UNFOLD = {
+    "SITE_TITLE": "VIP-EPICS Project Portal",
+    "SITE_HEADER": "VIP-EPICS Dashboard",
+    "STYLES": [
+        lambda request: static("core/admin-fixes.css"),
+    ],
+    "SIDEBAR": {
+        "show_search": True,
+        "navigation": [
+            {
+                "title": "Main",
+                "items": [
+                    {"title": "Dashboard", "link": "/admin/"},
+                    {"title": "Students", "model": "core.Student"},
+                    {"title": "Projects", "model": "core.Project"},
+                    {"title": "Applications", "model": "core.Application"},
+                ],
+            },
+        ],
+    },
+}
+
+

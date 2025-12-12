@@ -1,13 +1,19 @@
-import React, { useState } from "react";
+import React from "react";
+import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import Home from "./components/home";
 import RegisterForm from "./components/register";
+import StudentLogin from "./components/studentlogin"; // Make this new component
 
-export default function App() {
-
+function App() {
   return (
-    <div>
-      <RegisterForm />
-    </div>
-    
-  )
+    <Router>
+      <Routes>
+        <Route path="/" element={<Home />} />
+        <Route path="/register" element={<RegisterForm />} />
+        <Route path="/login-student" element={<StudentLogin />} />
+      </Routes>
+    </Router>
+  );
 }
 
+export default App;
