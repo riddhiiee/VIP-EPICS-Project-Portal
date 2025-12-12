@@ -1,14 +1,19 @@
 from django.db.models.signals import post_save
 from django.dispatch import receiver
-from django.contrib.auth.models import User,Group
+from django.contrib.auth.models import User, Group
 from .models import Faculty, Application
 import random
 import string
 
+
 @receiver(post_save, sender=Faculty)
 def create_user_for_faculty(sender, instance, created, **kwargs):
+    """
+    Automatically create a Django User account when a new Faculty is created.
+    Assigns a random password and adds them to the Faculty group.
+    """
     if created and not instance.user:
-        # Generate a random password
+        # Generate a random 8-character password
         password = ''.join(random.choices(string.ascii_letters + string.digits, k=8))
         
         # Create a new User
@@ -18,29 +23,38 @@ def create_user_for_faculty(sender, instance, created, **kwargs):
             first_name=instance.name,
             email=instance.email,
         )
-        # Optionally, set is_staff=True if you want faculty to access admin
         user.is_staff = True
         user.save()
         
         # Link the user to the faculty
         instance.user = user
         instance.save()
-        group_name = "Faculty"  # change to your group name
+        
+        # Add to Faculty group
+        group_name = "Faculty"
         group, _ = Group.objects.get_or_create(name=group_name)
         user.groups.add(group)
         user.save()
-        # You can print or email the password to the faculty
+        
+        # Print password (In production, send via email instead)
         print(f"Created user for {instance.name} with password: {password}")
 
 
 @receiver(post_save, sender=Application)
-def update_student_on_accept(sender, instance, **kwargs):
+def update_student_on_accept(sender, instance, created, **kwargs):
+    """
+    Automatically update Student when Application status changes:
+    - If Accepted: Assign faculty, project, and group to student
+    - If Rejected: Clear faculty, project, and group from student
+    """
     student = instance.student
+    
     if instance.status == "Accepted":
         student.faculty = instance.faculty
         student.project = instance.project
         student.group = instance.group
         student.save()
+        
     elif instance.status == "Rejected":
         student.faculty = None
         student.project = None
