@@ -1,5 +1,6 @@
 from django.contrib import admin
 from .models import Faculty, Student, Project, Application, ProjectGroup
+from django.contrib.admin.sites import AdminSite
 
 admin.site.register(Faculty)
 admin.site.register(ProjectGroup)
@@ -10,6 +11,20 @@ class ApplicationAdmin(admin.ModelAdmin):
     list_filter = ['status', 'faculty']
     actions = ["accept_application", "reject_application"]
 
+    def get_queryset(self, request):
+        qs = super().get_queryset(request)
+        
+        # If superuser, show all applications
+        if request.user.is_superuser:
+            return qs
+        
+        # Filter applications by faculty
+        try:
+            faculty = Faculty.objects.get(user=request.user)
+            return qs.filter(faculty=faculty)
+        except Faculty.DoesNotExist:
+            return qs.none()
+        
     def accept_application(self, request, queryset):
         count = 0
         for app in queryset:  # Loop through each application
@@ -53,3 +68,11 @@ class ProjectAdmin(admin.ModelAdmin):
         if hasattr(request.user, 'faculty'):
             return qs.filter(faculty=request.user.faculty)
         return qs.none()    
+    
+admin.site.site_header = "VIP EPICS Admin"
+class MyAdminSite(admin.AdminSite):
+    class Media:
+        js = ("chatbot.js",)
+
+admin_site = MyAdminSite()
+admin.site.__class__.Media = MyAdminSite.Media
