@@ -4,6 +4,9 @@ from django.contrib.auth.models import User, Group
 from .models import Faculty, Application
 import random
 import string
+from django.core.mail import send_mail
+from django.conf import settings
+
 
 
 @receiver(post_save, sender=Faculty)
@@ -54,9 +57,29 @@ def update_student_on_accept(sender, instance, created, **kwargs):
         student.project = instance.project
         student.group = instance.group
         student.save()
+        send_mail(
+                subject="Your Project Application is Accepted",
+                message=f"Hello {student.fullname},\n\n"
+                        f"Congratulations! Your application for the project under {instance.faculty.name} has been ACCEPTED.\n\n"
+                        "Regards,\nUniversity Portal",
+                from_email=settings.DEFAULT_FROM_EMAIL,
+                recipient_list=[student.email],
+                fail_silently=False,
+            )   
         
     elif instance.status == "Rejected":
         student.faculty = None
         student.project = None
         student.group = None
         student.save()
+        send_mail(
+            subject="Your Project Application is Rejected",
+            message=f"Hello {student.fullname},\n\n"
+                    f"Your application for the project under {instance.faculty.name} has been REJECTED.\n\n"
+                    "You can apply again from the student portal.\n\n"
+                    "Regards,\nUniversity Portal",
+            from_email=settings.DEFAULT_FROM_EMAIL,
+            recipient_list=[student.email],
+            fail_silently=False,
+        )
+

@@ -67,7 +67,7 @@ const allPasswordValid = Object.values(passwordValidations).every(Boolean);
       setError("Passwords do not match!");
       return;
     }
-    if (!/^\d{11}$/.test(formData.sapid)) {
+    if (!/^\d{11}$/.test(formData.sapid)) { 
       setError("SAP ID must be 11 digits.");
       return;
     }
@@ -84,11 +84,24 @@ const allPasswordValid = Object.values(passwordValidations).every(Boolean);
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload)
     })
-      .then(res => res.json())
-      .then(data => console.log("Saved:", data))
-      .catch(err => console.error(err));
-    setRegistered(true);
-  }
+      .then(async (res) => {
+      const data = await res.json();
+
+      if (!res.ok) {
+        // Handle backend validation errors
+        if (data.email) setError("Email already registered!");
+        else if (data.sapid) setError("SAP ID already registered!");
+        else if (data.username) setError("Username already taken!");
+        else setError("Registration failed. Please fix form.");
+
+        throw new Error("Validation failed");
+      }
+
+      console.log("Saved:", data);
+      setRegistered(true); // only on success
+    })
+    .catch(err => console.error("Registration error:", err));
+}
 
 function handleGroupChange(event) {
   const group = event.target.value;
@@ -232,7 +245,6 @@ console.log("groupOptions:", groupOptions);
       )}
 
       <p style={{ textAlign: "center", marginTop: "15px" }}>
-        Already have an account? <a href="#">Login</a>
       </p>
     </div>
   );

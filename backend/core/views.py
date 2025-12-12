@@ -1,11 +1,31 @@
 from rest_framework.decorators import api_view
+from django.contrib.auth.hashers import make_password, check_password
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework import status, generics
 from .models import Student, Faculty, Application, Project, ProjectGroup
 from .serializer import StudentSerializer, FacultySerializer, ApplicationSerializer
 from django.contrib.auth import authenticate, login
+from django.core.mail import send_mail
 
+
+@api_view(['POST'])
+def student_login(request):
+    username = request.data.get('username')
+    password = request.data.get('password')
+
+    if not username or not password:
+        return Response({"detail": "Username and password required"}, status=status.HTTP_400_BAD_REQUEST)
+
+    try:
+        student = Student.objects.get(username=username)
+    except Student.DoesNotExist:
+        return Response({"detail": "Invalid username or password"}, status=status.HTTP_400_BAD_REQUEST)
+
+    if student.password == password:
+        return Response({"success": True, "username": student.username})
+    else:
+        return Response({"detail": "Invalid username or password"}, status=status.HTTP_400_BAD_REQUEST)
 
 @api_view(['POST'])
 def post_student(request):
@@ -42,8 +62,25 @@ class ApplicationListCreateAPIView(APIView):
         except Student.DoesNotExist:
             return Response({"detail": "No Student found with this sapid"}, status=status.HTTP_400_BAD_REQUEST)
 
-        if Application.objects.filter(student=student, status='Accepted').exists():
-            return Response({"detail": "Student already accepted in a project"}, status=status.HTTP_400_BAD_REQUEST)
+        existing_app = Application.objects.filter(student=student).first()
+
+        # Case 1: Student never applied → ALLOW
+        if existing_app is None:
+            pass  # continue
+
+        # Case 2: Pending → BLOCK
+        elif existing_app.status == "Pending":
+            return Response({"detail": "Your previous application is still pending. You cannot apply again."},
+                            status=status.HTTP_400_BAD_REQUEST)
+
+        # Case 3: Accepted → BLOCK
+        elif existing_app.status == "Accepted":
+            return Response({"detail": "You are already accepted in a project. Cannot apply again."},
+                            status=status.HTTP_400_BAD_REQUEST)
+
+        # Case 4: Rejected → ALLOW re-apply
+        elif existing_app.status == "Rejected":
+            existing_app.delete()  # remove old rejected application
 
         faculty_id = request.data.get('faculty')
         project_id = request.data.get('project')
@@ -81,7 +118,7 @@ class ApplicationDetailAPIView(APIView):
         app = self.get_object(pk)
         if not app:
             return Response({"detail": "Not found"}, status=status.HTTP_404_NOT_FOUND)
-
+        old_status = app.status # track of current status
         new_status = request.data.get('status', app.status)
         faculty_id = request.data.get('faculty')
         project_id = request.data.get('project')
@@ -97,6 +134,41 @@ class ApplicationDetailAPIView(APIView):
         app.status = new_status
         app.save()
 
+        # Send email if status changed
+        student_email = app.student.email
+        student_name = app.student.fullname
+        faculty_name = app.faculty.name
+
+        # Only send email when status actually changes
+        if new_status != old_status:
+
+            # Accepted Email
+            if new_status == "Accepted":
+                print("Sending accected email to:", student_email) 
+                send_mail(
+                    subject="Your Project Application is Accepted",
+                    message=f"Hello {student_name},\n\n"
+                            f"Good news! Your application for the project under {faculty_name} has been ACCEPTED.\n\n"
+                            "You can now proceed with your next steps.\n\n"
+                            "Regards,\nUniversity Portal",
+                    from_email=None,  # uses DEFAULT_FROM_EMAIL
+                    recipient_list=[student_email],
+                    fail_silently=False
+                )
+
+            # Rejected Email
+            elif new_status == "Rejected":
+                print("Sending rejection email to:", student_email) 
+                send_mail(
+                    subject="Your Project Application is Rejected",
+                    message=f"Hello {student_name},\n\n"
+                            f"Your application for the project under {faculty_name} has been REJECTED.\n\n"
+                            "You may apply again from the student portal.\n\n"
+                            "Regards,\nUniversity Portal",
+                    from_email=None,
+                    recipient_list=[student_email],
+                    fail_silently=True
+              )
         return Response(ApplicationSerializer(app).data)
 
     def delete(self, request, pk):
@@ -118,3 +190,29 @@ class FacultyLoginAPIView(APIView):
 
         login(request, user)  # creates session cookie
         return Response({"detail": "ok"}, status=status.HTTP_200_OK)
+@api_view(['GET'])
+def application_status(request):
+    sapid = request.query_params.get('sapid')
+
+    if not sapid:
+        return Response({"detail": "sapid is required"}, status=400)
+
+    try:
+        student = Student.objects.get(sapid=sapid)
+    except Student.DoesNotExist:
+        return Response({"detail": "No student found"}, status=404)
+
+    app = Application.objects.filter(student=student).first()
+
+    if not app:
+        return Response({
+            "overall_status": "Not Applied",
+            "faculty_status": "Pending",
+            "hod_status": "Pending"
+        })
+
+    return Response({
+        "overall_status": app.status,
+        "faculty_status": app.faculty_status if hasattr(app, "faculty_status") else app.status,
+        "hod_status": app.hod_status if hasattr(app, "hod_status") else "Pending"
+    })

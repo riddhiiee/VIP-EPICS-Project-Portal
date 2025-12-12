@@ -1,0 +1,76 @@
+/* ---- DASHBOARD CARD ---- */
+.dashboard-card {
+  background: #14214a;
+  padding: 40px 32px;
+  border-radius: 30px;
+  width: 480px;
+  max-width: 95vw;
+  text-align: center;
+
+  /* removed glow/shadow */
+  box-shadow: none;
+}
+
+/* ---- HEADING ---- */
+.dashboard-card h1 {
+  font-size: 2rem;
+  font-weight: 700;
+  color: #ffffff;
+  letter-spacing: 0.5px;
+  margin-bottom: 28px;
+}
+
+/* ---- STATUS CARD ---- */
+.status-card {
+  background: #ecebfc;
+  color: #1c2350;
+  padding: 20px 18px;
+  border-radius: 18px;
+  margin-top: 20px;
+  font-size: 1.2rem;
+  font-weight: 600;
+
+  /* removed glow */
+  box-shadow: none;
+}
+
+.status.pending {
+  color: orange;
+}
+.status.accepted {
+  color: green;
+}
+.status.rejected {
+  color: red;
+}
+
+/* ---- BUTTON ---- */
+.action-btn {
+  margin-top: 28px;
+  padding: 12px 26px;
+  font-size: 1.1rem;
+  background: linear-gradient(90deg, #5fb8ff 0%, #4064e6 120%);
+  color: #fff;
+  border: none;
+  border-radius: 12px;
+  cursor: pointer;
+  font-weight: 600;
+
+  /* keep button glow */
+  box-shadow: 0 3px 18px -10px #4064e6aa;
+
+  transition: background .18s cubic-bezier(.03,.99,.49,.99), transform .14s;
+}
+
+.action-btn:hover {
+  background: linear-gradient(90deg, #2d72e6 0%, #5fb8ff 100%);
+  transform: scale(1.07);
+}
+
+/* ---- RESPONSIVE ---- */
+@media (max-width: 600px) {
+  .dashboard-card {
+    padding: 24px 14px;
+    width: 95vw;
+  }
+}

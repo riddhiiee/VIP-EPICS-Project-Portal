@@ -145,9 +145,13 @@ EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 EMAIL_HOST = 'smtp.gmail.com'
 EMAIL_PORT = 587
 EMAIL_USE_TLS = True
-EMAIL_HOST_USER = "s111surbhi@gmail.com"
+EMAIL_HOST_USER ="krishnaj.joshi24@gmail.com"
 EMAIL_HOST_PASSWORD = os.getenv("EMAIL_HOST_PASSWORD")
 DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
+
+EMAIL_USE_LOCALTIME = True
+# Force UTF-8
+EMAIL_SUBJECT_PREFIX = ''
 
 REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": [
@@ -181,5 +185,4 @@ UNFOLD = {
         ],
     },
 }
-
 
