@@ -6,20 +6,46 @@ admin.site.register(ProjectGroup)
 
 @admin.register(Application)
 class ApplicationAdmin(admin.ModelAdmin):
+    list_display = ['student', 'faculty', 'project', 'status', 'applied_at']
+    list_filter = ['status', 'faculty']
     actions = ["accept_application", "reject_application"]
 
+    def get_queryset(self, request):
+        qs = super().get_queryset(request)
+        
+        # If superuser, show all applications
+        if request.user.is_superuser:
+            return qs
+        
+        # Filter applications by faculty
+        try:
+            faculty = Faculty.objects.get(user=request.user)
+            return qs.filter(faculty=faculty)
+        except Faculty.DoesNotExist:
+            return qs.none()
+        
     def accept_application(self, request, queryset):
-        queryset.update(status="Accepted")
+        count = 0
+        for app in queryset:  # Loop through each application
+            app.status = "Accepted"
+            app.save()  #This triggers the signal!
+            count += 1
+        self.message_user(request, f'{count} application(s) accepted successfully.')
     accept_application.short_description = "Mark selected applications as Accepted"
 
     def reject_application(self, request, queryset):
-        queryset.update(status="Rejected")
+        count = 0
+        for app in queryset:  # Loop through each application
+            app.status = "Rejected"
+            app.save()  #This triggers the signal!
+            count += 1
+        self.message_user(request, f'{count} application(s) rejected successfully.')
     reject_application.short_description = "Mark selected applications as Rejected"
 
 
 @admin.register(Student)
 class StudentAdmin(admin.ModelAdmin):
-    list_display = ('fullname', 'sapid', 'faculty', 'project')
+    list_display = ('fullname', 'sapid', 'faculty', 'project', 'group')
 
     def get_queryset(self, request):
         qs = super().get_queryset(request)
@@ -30,6 +56,7 @@ class StudentAdmin(admin.ModelAdmin):
             return qs.filter(faculty=faculty)
         except Faculty.DoesNotExist:
             return qs.none()
+
 
 @admin.register(Project)
 class ProjectAdmin(admin.ModelAdmin):

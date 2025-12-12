@@ -102,7 +102,7 @@ button:hover {
 
 /* --- These override/add on to your .register-form for project selection --- */
 
-/.select-row {
+.select-row {
   grid-column: 1 / span 2;
   display: grid;
   grid-template-columns: 1fr 1fr;
