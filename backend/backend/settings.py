@@ -177,9 +177,6 @@ UNFOLD = {
                 "title": "Main",
                 "items": [
                     {"title": "Dashboard", "link": "/admin/"},
-                    {"title": "Students", "model": "core.Student"},
-                    {"title": "Projects", "model": "core.Project"},
-                    {"title": "Applications", "model": "core.Application"},
                 ],
             },
         ],

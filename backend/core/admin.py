@@ -2,8 +2,34 @@ from django.contrib import admin
 from .models import Faculty, Student, Project, Application, ProjectGroup
 from django.contrib.admin.sites import AdminSite
 
-admin.site.register(Faculty)
+
 admin.site.register(ProjectGroup)
+
+@admin.register(Faculty)
+class FacultyAdmin(admin.ModelAdmin):
+    list_display = ("name", "email", "department", "group")
+
+    def get_queryset(self, request):
+        qs = super().get_queryset(request)
+
+        # Superuser: see all faculty
+        if request.user.is_superuser:
+            return qs
+
+        # Faculty user: only their own Faculty row
+        try:
+            faculty = Faculty.objects.get(user=request.user)
+            return qs.filter(pk=faculty.pk)
+        except Faculty.DoesNotExist:
+            pass
+
+        # Leader: faculty in their group
+        group = ProjectGroup.objects.filter(leader=request.user).first()
+        if group:
+            return qs.filter(group=group)
+
+        # Others: nothing
+        return qs.none()
 
 @admin.register(Application)
 class ApplicationAdmin(admin.ModelAdmin):
