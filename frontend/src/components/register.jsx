@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from "react";
-import { Eye, EyeOff } from 'lucide-react';
 import "../App.css";
-
+import { Eye, EyeOff } from 'lucide-react';
 export default function RegisterForm() {
   const [formData, setFormData] = useState({
     username: "",
@@ -21,15 +20,19 @@ export default function RegisterForm() {
     project: ""
   });
 
-const [error, setError] = useState("");
-const [registered, setRegistered] = useState(false);
-const [facultyList, setFacultyList] = useState([]);
-const [selectedGroup, setSelectedGroup] = useState("");
-const [selectedFaculty, setSelectedFaculty] = useState("");
-const [projectNames, setProjectNames] = useState([]);
-const [facultyDept, setFacultyDept] = useState("");
-const [showPassword, setShowPassword] = useState(false);
+  const [error, setError] = useState("");
+  const [registered, setRegistered] = useState(false);
+  const [facultyList, setFacultyList] = useState([]);
+  const [selectedGroup, setSelectedGroup] = useState("");
+  const [selectedFaculty, setSelectedFaculty] = useState("");
+  const [projectNames, setProjectNames] = useState([]);
+  const [facultyDept, setFacultyDept] = useState("");
+  const [selectedProject, setSelectedProject] = useState("");
+  const [projectList, setProjectList] = useState([]);
+  const [deptConstraint, setDeptConstraint] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
 const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+
 
   // Fetch faculty from API
   useEffect(() => {
@@ -39,11 +42,21 @@ const [showConfirmPassword, setShowConfirmPassword] = useState(false);
       .catch((error) => console.error("Error fetching faculty list:", error));
   }, []);
 
+// added
+// useEffect(() => {
+//   if (formData.department && registered) {
+//     fetch(`http://127.0.0.1:8000/core/projects/?department=${formData.department}`)
+//       .then((response) => response.json())
+//       .then((data) => setProjectList(data))
+//       .catch((error) => console.error("Error fetching projects:", error));
+//   }
+// }, [formData.department, registered]);
+
   function handleChange(event) {
     setFormData({ ...formData, [event.target.name]: event.target.value });
   }
 
-  const passwordValidations = {
+   const passwordValidations = {
   minLength: formData.password.length >= 8,
   hasUpperCase: /[A-Z]/.test(formData.password),
   hasLowerCase: /[a-z]/.test(formData.password),
@@ -67,14 +80,14 @@ const allPasswordValid = Object.values(passwordValidations).every(Boolean);
       setError("Passwords do not match!");
       return;
     }
-    if (!/^\d{11}$/.test(formData.sapid)) { 
+    if (!/^\d{11}$/.test(formData.sapid)) {
       setError("SAP ID must be 11 digits.");
       return;
     }
     if (!allPasswordValid) {
       setError("Password must be 8+ chars with uppercase, lowercase, number & special char!");
-      return;
-}
+      return; 
+    }
     setError("");
     const payload = { ...formData };
     delete payload.confirmPassword;
@@ -84,46 +97,69 @@ const allPasswordValid = Object.values(passwordValidations).every(Boolean);
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload)
     })
-      .then(async (res) => {
-      const data = await res.json();
+      .then(res => res.json())
+      .then(data => console.log("Saved:", data))
+      .catch(err => console.error(err));
+    setRegistered(true);
+  }
 
-      if (!res.ok) {
-        // Handle backend validation errors
-        if (data.email) setError("Email already registered!");
-        else if (data.sapid) setError("SAP ID already registered!");
-        else if (data.username) setError("Username already taken!");
-        else setError("Registration failed. Please fix form.");
-
-        throw new Error("Validation failed");
-      }
-
-      console.log("Saved:", data);
-      setRegistered(true); // only on success
-    })
-    .catch(err => console.error("Registration error:", err));
-}
-
+  // changed
 function handleGroupChange(event) {
   const group = event.target.value;
   setSelectedGroup(group);
+  setSelectedProject("");
   setSelectedFaculty("");
-  setProjectNames([]);
   setFacultyDept("");
-  setFormData(prev => ({ ...prev, group }));
+
+  const studentDept = formData.department;
+
+  const projects = facultyList
+    .filter(
+      f =>
+        f.group &&
+        f.group.name === group &&
+        f.projects &&
+        f.projects.dept_constraint &&
+        f.projects.dept_constraint[studentDept] > 0
+    )
+    .map(f => f.projects);
+
+  const uniqueProjects = Array.from(
+    new Map(projects.map(p => [p.id, p])).values()
+  );
+
+  setProjectList(uniqueProjects);
 }
 
-function handleFacultyChange(event) {
-  const facultyId = event.target.value;
-  setSelectedFaculty(facultyId);
-  setFormData(prev => ({ ...prev, faculty: facultyId }));
-  const fac = facultyList.find(f => String(f.id) === String(facultyId) && f.group && f.group.name === selectedGroup);
-  setFacultyDept(fac ? fac.department : "");
 
-  const projects = fac && fac.projects ? [{ id: fac.projects.id, title: fac.projects.title }] : [];
-  setProjectNames(projects.map(p => p.title));
 
-  setFormData(prev => ({ ...prev, project: projects.length ? projects[0].id : "" }));
+// removed this
+// function handleFacultyChange(event) 
+
+function handleProjectChange(event) {
+  const projectId = event.target.value;
+  setSelectedProject(projectId);
+
+  const project = projectList.find(
+    p => String(p.id) === String(projectId)
+  );
+  setDeptConstraint(project?.description || "");
+
+  const fac = facultyList.find(
+    f => f.projects && String(f.projects.id) === String(projectId)
+  );
+
+  if (fac) {
+    setSelectedFaculty(fac.id);
+    setFacultyDept(fac.department);
+    setFormData(prev => ({
+      ...prev,
+      faculty: fac.id,
+      project: projectId
+    }));
+  }
 }
+
 
 function registerClicked() {
   if (!formData.sapid) {
@@ -156,8 +192,7 @@ function registerClicked() {
 }
 
 const filteredFacultyList = facultyList.filter(f => f.group && f.group.name === selectedGroup);
-const groupOptions = [...new Set(facultyList.map(f => f.group && f.group.name))];
-console.log("groupOptions:", groupOptions);
+
   return (
     <div className="container">
       <h2>Student Registration</h2>
@@ -211,31 +246,37 @@ console.log("groupOptions:", groupOptions);
           <h2>Select Your Project</h2>
           <form className="register-form">
             <div className="select-row">
-            <div className="select-col">
-              <label>Choose Group:</label>
-              <select value={selectedGroup} onChange={handleGroupChange}>
-                <option value="">Select group</option>
-                {groupOptions.map(group => (
-                group && <option key={group} value={group}>{group}</option>
-                ))}
-              </select>
-            </div>
-            <div className="select-col">
-              <label>Choose Faculty:</label>
-              <select value={selectedFaculty} onChange={handleFacultyChange} disabled={!selectedGroup}>
-                  <option value="">Select faculty</option>
-                  {filteredFacultyList.map(faculty => (
-                    <option key={faculty.id} value={faculty.id}>{faculty.name}</option>
+              <div className="select-col">
+                <label>Choose Group:</label>
+                <select value={selectedGroup} onChange={handleGroupChange}>
+                  <option value="">Select group</option>
+                  {[...new Set(facultyList.map(f => f.group && f.group.name))].map(
+                    group => group && <option key={group} value={group}>{group}</option>
+                  )}
+                </select>
+              </div>
+
+              <div className="select-col">
+                <label>Choose Project:</label>
+                <select value={selectedProject} onChange={handleProjectChange} disabled={!selectedGroup}>
+                  <option value="">Select project</option>
+                  {projectList.map(p => (
+                    <option key={p.id} value={p.id}>{p.title}</option>
                   ))}
-              </select>
-
+                </select>
+              </div>
             </div>
-          </div>
 
-            {selectedFaculty && (
+
+            {selectedProject && (
               <div className="info-row">
-                <div><strong>Projects:</strong> {projectNames.join(", ")}</div>
+                <div><strong>Faculty:</strong> {facultyList.find(f => f.id === selectedFaculty)?.name}</div>
                 <div><strong>Department:</strong> {facultyDept}</div>
+                <div><strong>Students required:</strong> {deptConstraint}</div>
+                {/* <div><strong>Slots available for {formData.department}:</strong> {
+  projectList.find(p => String(p.id) === String(selectedProject))
+    ?.dept_constraints?.[formData.department] || 0
+}</div> */}
               </div>
             )}
 
@@ -243,10 +284,6 @@ console.log("groupOptions:", groupOptions);
           </form>
         </div>
       )}
-
-      <p style={{ textAlign: "center", marginTop: "15px" }}>
-      </p>
     </div>
   );
 }
-
