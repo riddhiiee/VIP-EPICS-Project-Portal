@@ -13,7 +13,7 @@ export default function Home() {
   return (
     <div className="home-background">
       <div className="home-card">
-        <h1 className="portal-title">VIP-EPICS Project Portal</h1>
+        <h1 className="portal-title">Design Experiment</h1>
         <div className="portal-btn-group">
           <button className="portal-btn" onClick={() => navigate("/register")}>
             Register as Student

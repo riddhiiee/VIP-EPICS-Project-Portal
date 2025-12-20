@@ -224,7 +224,7 @@ const filteredFacultyList = facultyList.filter(f => f.group && f.group.name === 
             <option value="">Department</option>
             <option>DS</option>
             <option>IT</option>
-            <option>Mech</option>
+            <option>MECH</option>
             <option>CS</option>
             <option>EXTC</option>
           </select>

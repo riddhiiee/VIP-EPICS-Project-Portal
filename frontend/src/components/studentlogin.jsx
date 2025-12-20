@@ -55,14 +55,6 @@ export default function StudentLogin() {
             />
             <input
               className="login-inp"
-              type="password"
-              placeholder="Password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-            />
-            <input
-              className="login-inp"
               type="text"
               placeholder="SAP ID"
               value={sapid}
@@ -70,6 +62,15 @@ export default function StudentLogin() {
               onChange={(e) => setSapid(e.target.value)}
               required
             />
+            <input
+              className="login-inp"
+              type="password"
+              placeholder="Password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+            />
+            
             <button className="login-btn" type="submit">
               Login
             </button>

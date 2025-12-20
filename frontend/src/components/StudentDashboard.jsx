@@ -8,9 +8,11 @@ export default function StudentDashboard() {
   const [facultyList, setFacultyList] = useState([]);
   const [selectedGroup, setSelectedGroup] = useState("");
   const [selectedFaculty, setSelectedFaculty] = useState(""); // will be UUID string
-  const [projectNames, setProjectNames] = useState([]);
+  const [selectedProject, setSelectedProject] = useState("");
+  const [projectList, setProjectList] = useState([]);
   const [selectedProjectId, setSelectedProjectId] = useState("");
   const [facultyDept, setFacultyDept] = useState("");
+  const [deptConstraint, setDeptConstraint] = useState("");
   const [loading, setLoading] = useState(true);
 
   const username = localStorage.getItem("username");
@@ -27,19 +29,27 @@ export default function StudentDashboard() {
 
     fetch(`http://127.0.0.1:8000/core/student/?sapid=${sapid}`)
       .then(res => {
-        return res.json().catch(() => null);
+        if (!res.ok) throw new Error('Student not found');
+        return res.json();
       })
       .then(data => {
         console.log("STUDENT FETCH RESPONSE:", data);
         if (!mounted) return;
-        const student = data ? (Array.isArray(data) ? data[0] : data) : null;
-        if (student && Object.keys(student).length > 0) {
+        
+        // Handle both array and single object response
+        const student = Array.isArray(data) ? data[0] : data;
+        
+        if (student && student.department) {
+          // Successfully got full student data with department
           setStudentInfo(student);
+          console.log("Student department:", student.department);
         } else {
+          console.warn("Student data missing department field");
           setStudentInfo({
             fullname: fullnameLS || username || "Student",
             username: username || "",
-            sapid: sapid
+            sapid: sapid,
+            department: "" // Add empty department
           });
         }
       })
@@ -49,7 +59,8 @@ export default function StudentDashboard() {
           setStudentInfo({
             fullname: fullnameLS || username || "Student",
             username: username || "",
-            sapid: sapid
+            sapid: sapid,
+            department: "" // Add empty department
           });
         }
       });
@@ -85,39 +96,106 @@ export default function StudentDashboard() {
 
     return () => { mounted = false; };
   }, [sapid, username, fullnameLS]);
+  
   const groupOptions = [...new Set(facultyList.filter(f => f.group && f.group.name).map(f => f.group.name))];
-
-  const filteredFacultyList = facultyList.filter(f => f.group && f.group.name === selectedGroup);
 
   const handleGroupChange = (e) => {
     const group = e.target.value;
     setSelectedGroup(group);
+    setSelectedProject("");
     setSelectedFaculty("");
-    setProjectNames([]);
     setSelectedProjectId("");
     setFacultyDept("");
-  };
+    setDeptConstraint("");
 
-  const handleFacultyChange = (e) => {
-    const facultyId = e.target.value; // keep as string (UUID)
-    setSelectedFaculty(facultyId);
+    // Get student department from studentInfo
+    const studentDept = studentInfo?.department;
+    
+    console.log("🔍 Student Department:", studentDept);
+    console.log("🔍 Selected Group:", group);
+    console.log("🔍 Full Faculty List:", facultyList);
 
-    // find faculty by comparing strings (UUIDs are strings)
-    const fac = facultyList.find(f => String(f.id) === String(facultyId));
-    setFacultyDept(fac ? fac.department : "");
-    let projects = [];
-    if (fac && fac.projects) {
-      if (Array.isArray(fac.projects)) {
-        projects = fac.projects;
-      } else {
-        // single object
-        projects = [fac.projects];
-      }
+    if (!studentDept) {
+      console.error("❌ Student department not found!");
+      alert("Error: Your department information is missing. Please contact admin.");
+      setProjectList([]);
+      return;
     }
 
-    const titles = projects.map(p => p.title);
-    setProjectNames(titles);
-    setSelectedProjectId(projects.length ? projects[0].id : "");
+    // Collect all projects from faculties in the selected group
+    const allProjects = [];
+    
+    facultyList.forEach(f => {
+      // Check if faculty is in the selected group
+      if (!f.group || f.group.name !== group) {
+        return;
+      }
+
+      console.log(`\n📋 Faculty: ${f.name}`);
+      console.log("  Projects data:", f.projects);
+
+      // Handle both single project object and array of projects
+      let facultyProjects = [];
+      if (f.projects) {
+        if (Array.isArray(f.projects)) {
+          facultyProjects = f.projects;
+        } else {
+          facultyProjects = [f.projects];
+        }
+      }
+
+      console.log("  Normalized projects:", facultyProjects);
+
+      // Filter projects that have slots for student's department
+      facultyProjects.forEach(project => {
+        console.log(`  \n  Project: ${project.title}`);
+        console.log(`    dept_constraint:`, project.dept_constraint);
+        
+        if (project.dept_constraint && project.dept_constraint[studentDept] !== undefined) {
+          const slots = project.dept_constraint[studentDept];
+          console.log(`    Slots for ${studentDept}: ${slots}`);
+          
+          if (slots > 0) {
+            console.log(`    ✅ ADDING PROJECT (has ${slots} slots)`);
+            allProjects.push(project);
+          } else {
+            console.log(`    ❌ SKIPPING (no slots available)`);
+          }
+        } else {
+          console.log(`    ❌ SKIPPING (no constraint for ${studentDept})`);
+        }
+      });
+    });
+
+    // Remove duplicates based on project ID
+    const uniqueProjects = Array.from(
+      new Map(allProjects.map(p => [p.id, p])).values()
+    );
+
+    console.log("\n🎯 Final Unique Projects:", uniqueProjects);
+    setProjectList(uniqueProjects);
+  };
+
+  const handleProjectChange = (e) => {
+    const projectId = e.target.value;
+    setSelectedProject(projectId);
+    setSelectedProjectId(projectId);
+
+    // Find the project
+    const project = projectList.find(
+      p => String(p.id) === String(projectId)
+    );
+    setDeptConstraint(project?.description || "");
+
+    // Find faculty associated with this project
+    const fac = facultyList.find(
+      f => f.projects && String(f.projects.id) === String(projectId)
+    );
+
+    if (fac) {
+      setSelectedFaculty(fac.id);
+      setFacultyDept(fac.department);
+    }
   };
 
   const registerClicked = async () => {
@@ -131,7 +209,7 @@ export default function StudentDashboard() {
     }
 
     if (!selectedFaculty) {
-      alert("Select a faculty first!");
+      alert("Select a project first!");
       return;
     }
     if (!sapid) {
@@ -229,21 +307,21 @@ export default function StudentDashboard() {
                 </div>
 
                 <div className="select-col">
-                  <label>Choose Faculty:</label>
-                  <select value={selectedFaculty} onChange={handleFacultyChange} disabled={!selectedGroup || !canApply}>
-                    <option value="">Select faculty</option>
-                    {filteredFacultyList.map(f => (
-                      // value is UUID string
-                      <option key={f.id} value={f.id}>{f.name}</option>
+                  <label>Choose Project:</label>
+                  <select value={selectedProject} onChange={handleProjectChange} disabled={!selectedGroup || !canApply}>
+                    <option value="">Select project</option>
+                    {projectList.map(p => (
+                      <option key={p.id} value={p.id}>{p.title}</option>
                     ))}
                   </select>
                 </div>
               </div>
 
-              {selectedFaculty && (
+              {selectedProject && (
                 <div className="info-row">
-                  <p><strong>Projects:</strong> {projectNames.length ? projectNames.join(", ") : "No projects available"}</p>
+                  <p><strong>Faculty:</strong> {facultyList.find(f => f.id === selectedFaculty)?.name || "—"}</p>
                   <p><strong>Department:</strong> {facultyDept || "—"}</p>
+                  <p><strong>Students required:</strong> {deptConstraint}</p>
                 </div>
               )}
 
