@@ -1,12 +1,12 @@
-from django.db.models.signals import post_save
+from django.db.models.signals import post_save, pre_save
 from django.dispatch import receiver
 from django.contrib.auth.models import User, Group
-from .models import Faculty, Application
+from .models import Faculty, Application, Project
 import random
 import string
 from django.core.mail import send_mail
 from django.conf import settings
-
+from django.db import transaction
 
 
 @receiver(post_save, sender=Faculty)
@@ -49,37 +49,82 @@ def update_student_on_accept(sender, instance, created, **kwargs):
     Automatically update Student when Application status changes:
     - If Accepted: Assign faculty, project, and group to student
     - If Rejected: Clear faculty, project, and group from student
-    """
+    """   
     student = instance.student
-    
+    project = instance.project
+
     if instance.status == "Accepted":
         student.faculty = instance.faculty
         student.project = instance.project
         student.group = instance.group
         student.save()
-        send_mail(
-                subject="Your Project Application is Accepted",
-                message=f"Hello {student.fullname},\n\n"
-                        f"Congratulations! Your application for the project under {instance.faculty.name} has been ACCEPTED.\n\n"
-                        "Regards,\nUniversity Portal",
-                from_email=settings.DEFAULT_FROM_EMAIL,
-                recipient_list=[student.email],
-                fail_silently=False,
-            )   
+
+        dept = student.department
         
-    elif instance.status == "Rejected":
-        student.faculty = None
-        student.project = None
-        student.group = None
-        student.save()
+        # Refresh project from database to get latest state
+        project.refresh_from_db()
+        
+        print(f"🔍 DEBUG: Before change - dept_constraint: {project.dept_constraint}")
+        print(f"🔍 DEBUG: Department: {dept}")
+        
+        if project.dept_constraint and dept in project.dept_constraint:
+            if project.dept_constraint[dept] > 0:
+                # Create a NEW dictionary (important for JSONField to detect changes)
+                new_constraints = dict(project.dept_constraint)
+                new_constraints[dept] -= 1
+                project.dept_constraint = new_constraints
+                
+                print(f"🔍 DEBUG: After change - dept_constraint: {project.dept_constraint}")
+                
+                # Save with update_fields to ensure the field is updated
+                project.save(update_fields=['dept_constraint'])
+                
+                # Verify the save
+                project.refresh_from_db()
+                print(f"🔍 DEBUG: After save - dept_constraint from DB: {project.dept_constraint}")
+                print(f"✅ Student {student.fullname} accepted. {dept} slots: {project.dept_constraint[dept]} remaining")
+        else:
+            print(f"⚠️ WARNING: No constraint found for department {dept}")
+
         send_mail(
-            subject="Your Project Application is Rejected",
+            subject="Your Project Application is Accepted",
             message=f"Hello {student.fullname},\n\n"
-                    f"Your application for the project under {instance.faculty.name} has been REJECTED.\n\n"
-                    "You can apply again from the student portal.\n\n"
+                    f"Congratulations! Your application for the project under {instance.faculty.name} has been ACCEPTED.\n\n"
                     "Regards,\nUniversity Portal",
             from_email=settings.DEFAULT_FROM_EMAIL,
             recipient_list=[student.email],
             fail_silently=False,
-        )
+        )   
+        
+    elif instance.status == "Rejected":
+        if student.project == project:
+            student.faculty = None
+            student.project = None
+            student.group = None
+            student.save()
 
+            if project and project.dept_constraint:
+                dept = student.department
+                
+                # Refresh project from database
+                project.refresh_from_db()
+                
+                if dept in project.dept_constraint:
+                    # Create a NEW dictionary (important for JSONField)
+                    new_constraints = dict(project.dept_constraint)
+                    new_constraints[dept] += 1
+                    project.dept_constraint = new_constraints
+                    project.save(update_fields=['dept_constraint'])
+                    
+                    print(f"❌ Student {student.fullname} rejected. {dept} slots restored: {project.dept_constraint[dept]}")
+            
+            send_mail(
+                subject="Your Project Application is Rejected",
+                message=f"Hello {student.fullname},\n\n"
+                        f"Your application for the project under {instance.faculty.name} has been REJECTED.\n\n"
+                        "You can apply again from the student portal.\n\n"
+                        "Regards,\nUniversity Portal",
+                from_email=settings.DEFAULT_FROM_EMAIL,
+                recipient_list=[student.email],
+                fail_silently=False,
+            )

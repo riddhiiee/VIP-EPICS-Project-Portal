@@ -35,9 +35,9 @@ OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 
 # Application definition
 
-INSTALLED_APPS = [
-    'unfold', 
+INSTALLED_APPS = [ 
     'django.contrib.admin',
+    'import_export',
     'django.contrib.auth',
     'django.contrib.contenttypes',
     'django.contrib.sessions',
@@ -164,22 +164,5 @@ CORS_ALLOWED_ORIGINS = ["http://localhost:5173"]
 CSRF_TRUSTED_ORIGINS = ["http://localhost:5173"]
 
 
-UNFOLD = {
-    "SITE_TITLE": "VIP-EPICS Project Portal",
-    "SITE_HEADER": "VIP-EPICS Dashboard",
-    "STYLES": [
-        lambda request: static("core/admin-fixes.css"),
-    ],
-    "SIDEBAR": {
-        "show_search": True,
-        "navigation": [
-            {
-                "title": "Main",
-                "items": [
-                    {"title": "Dashboard", "link": "/admin/"},
-                ],
-            },
-        ],
-    },
-}
+
 

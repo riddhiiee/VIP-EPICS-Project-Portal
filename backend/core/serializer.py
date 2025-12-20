@@ -9,7 +9,7 @@ class StudentSerializer(serializers.ModelSerializer):
 class ProjectSerializer(serializers.ModelSerializer):
     class Meta:
         model = Project
-        fields = ['id', 'title', 'description']
+        fields = '__all__'
 
 class ProjectGroupSerializer(serializers.ModelSerializer):
     class Meta:

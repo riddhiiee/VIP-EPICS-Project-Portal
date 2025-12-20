@@ -1,6 +1,13 @@
+from .resources import ProjectResource
 from django.contrib import admin
+from import_export.admin import ImportExportModelAdmin
 from .models import Faculty, Student, Project, Application, ProjectGroup
 from django.contrib.admin.sites import AdminSite
+import pandas as pd
+from import_export.admin import ExportMixin
+from django.http import HttpResponse
+from django.urls import path
+from django.db import transaction
 
 
 admin.site.register(ProjectGroup)
@@ -8,26 +15,21 @@ admin.site.register(ProjectGroup)
 @admin.register(Faculty)
 class FacultyAdmin(admin.ModelAdmin):
     list_display = ("name", "email", "department", "group")
-
     def get_queryset(self, request):
         qs = super().get_queryset(request)
-
         # Superuser: see all faculty
         if request.user.is_superuser:
             return qs
-
         # Faculty user: only their own Faculty row
         try:
             faculty = Faculty.objects.get(user=request.user)
             return qs.filter(pk=faculty.pk)
         except Faculty.DoesNotExist:
             pass
-
         # Leader: faculty in their group
         group = ProjectGroup.objects.filter(leader=request.user).first()
         if group:
             return qs.filter(group=group)
-
         # Others: nothing
         return qs.none()
 
@@ -39,11 +41,9 @@ class ApplicationAdmin(admin.ModelAdmin):
 
     def get_queryset(self, request):
         qs = super().get_queryset(request)
-        
         # If superuser, show all applications
         if request.user.is_superuser:
             return qs
-        
         # Filter applications by faculty
         try:
             faculty = Faculty.objects.get(user=request.user)
@@ -71,9 +71,8 @@ class ApplicationAdmin(admin.ModelAdmin):
 
 
 @admin.register(Student)
-class StudentAdmin(admin.ModelAdmin):
+class StudentAdmin(ExportMixin,admin.ModelAdmin):
     list_display = ('fullname', 'sapid', 'faculty', 'project', 'group')
-
     def get_queryset(self, request):
         qs = super().get_queryset(request)
         if request.user.is_superuser:
@@ -83,10 +82,13 @@ class StudentAdmin(admin.ModelAdmin):
             return qs.filter(faculty=faculty)
         except Faculty.DoesNotExist:
             return qs.none()
-
-
+        
 @admin.register(Project)
-class ProjectAdmin(admin.ModelAdmin):
+class ProjectAdmin(ImportExportModelAdmin):
+    resource_class = ProjectResource
+    readonly_fields = ("dept_constraint",)
+    exclude = ("dept_constraint",) 
+    list_display = ['title', 'description', 'faculty', 'group']
     def get_queryset(self, request):
         qs = super().get_queryset(request)
         if request.user.is_superuser:
@@ -96,9 +98,5 @@ class ProjectAdmin(admin.ModelAdmin):
         return qs.none()    
     
 admin.site.site_header = "VIP EPICS Admin"
-class MyAdminSite(admin.AdminSite):
-    class Media:
-        js = ("chatbot.js",)
 
-admin_site = MyAdminSite()
-admin.site.__class__.Media = MyAdminSite.Media
+

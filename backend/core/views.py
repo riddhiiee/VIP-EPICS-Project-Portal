@@ -4,7 +4,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework import status, generics
 from .models import Student, Faculty, Application, Project, ProjectGroup
-from .serializer import StudentSerializer, FacultySerializer, ApplicationSerializer
+from .serializer import StudentSerializer, FacultySerializer, ApplicationSerializer, ProjectSerializer
 from django.contrib.auth import authenticate, login
 from django.core.mail import send_mail
 
@@ -45,6 +45,40 @@ class FacultyListAPIView(generics.ListAPIView):
         if group_name:
             queryset = queryset.filter(group__name=group_name)
         return queryset
+
+
+# NEW: Project List API with department filtering
+class ProjectListAPIView(generics.ListAPIView):
+    """
+    List projects filtered by student's department.
+    Only shows projects that have available slots for the student's department.
+    Usage: GET /api/projects/?department=IT
+    """
+    serializer_class = ProjectSerializer
+
+    def get_queryset(self):
+        # Get student's department from query params
+        student_dept = self.request.query_params.get('department', None)
+        
+        if not student_dept:
+            # Return all projects if no department specified
+            return Project.objects.all()
+        
+        # Get all projects
+        projects = Project.objects.all()
+        
+        # Filter projects that have slots available for this department
+        available_projects = []
+        for project in projects:
+            if project.dept_constraint:
+                # Check if department exists in constraints and has slots > 0
+                if student_dept in project.dept_constraint:
+                    if project.dept_constraint[student_dept] > 0:
+                        available_projects.append(project.id)
+        
+        # Return only projects with available slots
+        return Project.objects.filter(id__in=available_projects)
+
 
 class ApplicationListCreateAPIView(APIView):
     def get(self, request):
@@ -130,7 +164,8 @@ class ApplicationDetailAPIView(APIView):
             app.project = Project.objects.filter(pk=project_id).first()
         if group_id:
             app.group = ProjectGroup.objects.filter(pk=group_id).first()
-
+                    
+        app._old_status = old_status 
         app.status = new_status
         app.save()
 
@@ -190,6 +225,8 @@ class FacultyLoginAPIView(APIView):
 
         login(request, user)  # creates session cookie
         return Response({"detail": "ok"}, status=status.HTTP_200_OK)
+
+
 @api_view(['GET'])
 def application_status(request):
     sapid = request.query_params.get('sapid')

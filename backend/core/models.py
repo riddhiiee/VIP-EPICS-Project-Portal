@@ -3,6 +3,7 @@ from django.contrib.auth.models import User
 import uuid
 from django.db.models.signals import post_save
 from django.dispatch import receiver
+import re
 
 class ProjectGroup(models.Model):
     name = models.CharField(max_length=50)  # VIP, EPICS, etc.
@@ -25,9 +26,27 @@ class Faculty(models.Model):
 class Project(models.Model):
     title = models.CharField(max_length=200)
     description = models.TextField()
+    dept_constraint = models.JSONField(null=True,blank=True)
     faculty = models.OneToOneField(Faculty, on_delete=models.CASCADE, related_name="projects") #
     group = models.ForeignKey(ProjectGroup, on_delete=models.SET_NULL, null=True, blank=True, related_name="projects") #
 
+    def save(self, *args, **kwargs):
+        update_fields = kwargs.get('update_fields', None)
+
+        if update_fields is not None and 'description' not in update_fields:
+            super().save(*args, **kwargs)
+            return
+    
+        if self.pk is None or not self.dept_constraint:
+            constraints = {}
+            if self.description:
+                pairs = re.findall(r'([A-Za-z]+)\s*:\s*(\d+)', self.description)
+                for dept, count in pairs:
+                    constraints[dept.upper()] = int(count)
+            
+            self.dept_constraint = constraints if constraints else None
+        super().save(*args, **kwargs)
+    
     def __str__(self):
         return self.title
 
