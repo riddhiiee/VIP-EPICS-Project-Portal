@@ -1,14 +1,11 @@
 from .resources import ProjectResource
 from django.contrib import admin
-from import_export.admin import ImportExportModelAdmin
+from import_export.admin import ImportExportModelAdmin,ExportMixin
 from .models import Faculty, Student, Project, Application, ProjectGroup
 from django.contrib.admin.sites import AdminSite
-import pandas as pd
-from import_export.admin import ExportMixin
 from django.http import HttpResponse
 from django.urls import path
 from django.db import transaction
-
 
 admin.site.register(ProjectGroup)
 

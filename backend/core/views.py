@@ -27,13 +27,25 @@ def student_login(request):
     else:
         return Response({"detail": "Invalid username or password"}, status=status.HTTP_400_BAD_REQUEST)
 
-@api_view(['POST'])
+@api_view(['GET','POST'])
 def post_student(request):
-    serializer = StudentSerializer(data=request.data)
-    if serializer.is_valid():
-        serializer.save()
-        return Response(serializer.data, status=status.HTTP_201_CREATED)
-    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    if request.method == 'GET':
+        sapid = request.query_params.get('sapid')
+        if not sapid:
+            return Response({"detail": "sapid parameter required"}, status=status.HTTP_400_BAD_REQUEST)
+        
+        try:
+            student = Student.objects.get(sapid=sapid)
+            serializer = StudentSerializer(student)
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        except Student.DoesNotExist:
+            return Response({"detail": "Student not found"}, status=status.HTTP_404_NOT_FOUND)
+    elif request.method == 'POST':
+        serializer = StudentSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
 class FacultyListAPIView(generics.ListAPIView):
