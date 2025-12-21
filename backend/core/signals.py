@@ -11,10 +11,6 @@ from django.db import transaction
 
 @receiver(post_save, sender=Faculty)
 def create_user_for_faculty(sender, instance, created, **kwargs):
-    """
-    Automatically create a Django User account when a new Faculty is created.
-    Assigns a random password and adds them to the Faculty group.
-    """
     if created and not instance.user:
         # Generate a random 8-character password
         password = ''.join(random.choices(string.ascii_letters + string.digits, k=8))
@@ -42,14 +38,8 @@ def create_user_for_faculty(sender, instance, created, **kwargs):
         # Print password (In production, send via email instead)
         print(f"Created user for {instance.name} with password: {password}")
 
-
 @receiver(post_save, sender=Application)
-def update_student_on_accept(sender, instance, created, **kwargs):
-    """
-    Automatically update Student when Application status changes:
-    - If Accepted: Assign faculty, project, and group to student
-    - If Rejected: Clear faculty, project, and group from student
-    """   
+def update_student_on_accept(sender, instance, created, **kwargs):  
     student = instance.student
     project = instance.project
 
@@ -63,28 +53,19 @@ def update_student_on_accept(sender, instance, created, **kwargs):
         
         # Refresh project from database to get latest state
         project.refresh_from_db()
-        
-        print(f"🔍 DEBUG: Before change - dept_constraint: {project.dept_constraint}")
-        print(f"🔍 DEBUG: Department: {dept}")
-        
         if project.dept_constraint and dept in project.dept_constraint:
             if project.dept_constraint[dept] > 0:
                 # Create a NEW dictionary (important for JSONField to detect changes)
                 new_constraints = dict(project.dept_constraint)
                 new_constraints[dept] -= 1
                 project.dept_constraint = new_constraints
-                
-                print(f"🔍 DEBUG: After change - dept_constraint: {project.dept_constraint}")
-                
                 # Save with update_fields to ensure the field is updated
-                project.save(update_fields=['dept_constraint'])
-                
+                project.save(update_fields=['dept_constraint'])              
                 # Verify the save
                 project.refresh_from_db()
-                print(f"🔍 DEBUG: After save - dept_constraint from DB: {project.dept_constraint}")
-                print(f"✅ Student {student.fullname} accepted. {dept} slots: {project.dept_constraint[dept]} remaining")
+
         else:
-            print(f"⚠️ WARNING: No constraint found for department {dept}")
+            print(f"WARNING: No constraint found for department {dept}")
 
         send_mail(
             subject="Your Project Application is Accepted",
@@ -116,7 +97,7 @@ def update_student_on_accept(sender, instance, created, **kwargs):
                     project.dept_constraint = new_constraints
                     project.save(update_fields=['dept_constraint'])
                     
-                    print(f"❌ Student {student.fullname} rejected. {dept} slots restored: {project.dept_constraint[dept]}")
+                    print(f"Student {student.fullname} rejected. {dept} slots restored: {project.dept_constraint[dept]}")
             
             send_mail(
                 subject="Your Project Application is Rejected",

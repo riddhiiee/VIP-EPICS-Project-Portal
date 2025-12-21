@@ -61,11 +61,7 @@ class FacultyListAPIView(generics.ListAPIView):
 
 # NEW: Project List API with department filtering
 class ProjectListAPIView(generics.ListAPIView):
-    """
-    List projects filtered by student's department.
-    Only shows projects that have available slots for the student's department.
-    Usage: GET /api/projects/?department=IT
-    """
+
     serializer_class = ProjectSerializer
 
     def get_queryset(self):
@@ -181,41 +177,6 @@ class ApplicationDetailAPIView(APIView):
         app.status = new_status
         app.save()
 
-        # Send email if status changed
-        student_email = app.student.email
-        student_name = app.student.fullname
-        faculty_name = app.faculty.name
-
-        # Only send email when status actually changes
-        if new_status != old_status:
-
-            # Accepted Email
-            if new_status == "Accepted":
-                print("Sending accected email to:", student_email) 
-                send_mail(
-                    subject="Your Project Application is Accepted",
-                    message=f"Hello {student_name},\n\n"
-                            f"Good news! Your application for the project under {faculty_name} has been ACCEPTED.\n\n"
-                            "You can now proceed with your next steps.\n\n"
-                            "Regards,\nUniversity Portal",
-                    from_email=None,  # uses DEFAULT_FROM_EMAIL
-                    recipient_list=[student_email],
-                    fail_silently=False
-                )
-
-            # Rejected Email
-            elif new_status == "Rejected":
-                print("Sending rejection email to:", student_email) 
-                send_mail(
-                    subject="Your Project Application is Rejected",
-                    message=f"Hello {student_name},\n\n"
-                            f"Your application for the project under {faculty_name} has been REJECTED.\n\n"
-                            "You may apply again from the student portal.\n\n"
-                            "Regards,\nUniversity Portal",
-                    from_email=None,
-                    recipient_list=[student_email],
-                    fail_silently=True
-              )
         return Response(ApplicationSerializer(app).data)
 
     def delete(self, request, pk):
@@ -256,12 +217,8 @@ def application_status(request):
     if not app:
         return Response({
             "overall_status": "Not Applied",
-            "faculty_status": "Pending",
-            "hod_status": "Pending"
         })
 
     return Response({
         "overall_status": app.status,
-        "faculty_status": app.faculty_status if hasattr(app, "faculty_status") else app.status,
-        "hod_status": app.hod_status if hasattr(app, "hod_status") else "Pending"
     })

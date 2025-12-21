@@ -10,9 +10,6 @@ urlpatterns = [
     path("faculty-login/", FacultyLoginAPIView.as_view(), name="faculty-login"),
     path('student-login/', student_login, name='student-login'),
     path('applications/status/', application_status),
-
-    # Application endpoints
     path('applications/', ApplicationListCreateAPIView.as_view(), name='application-list-create'),
     path('applications/<int:pk>/', ApplicationDetailAPIView.as_view(), name='application-detail'),
-    
 ]
