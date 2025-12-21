@@ -2,4 +2,5 @@ env/
 _pycache_/
 *.pyc   
 .env
-backend/db.sqlite3
+db.sqlite3
+venv/
