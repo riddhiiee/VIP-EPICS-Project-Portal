@@ -12,9 +12,9 @@ This project is a full-stack web application developed to manage college project
 - Easy local development setup
 
 ## Tech Stack
-Frontend: React.js, HTML5, CSS3, JavaScript, Axios / Fetch API  
-Backend: Django, Django REST Framework (DRF)  
-Database: SQLite  
+- **Frontend:** React.js, HTML5, CSS3, JavaScript, Axios / Fetch API  
+- **Backend:** Django, Django REST Framework (DRF)  
+- **Database:** SQLite  
 
 ## System Architecture
 The React frontend handles user interaction and form submission. The Django backend exposes RESTful APIs using Django REST Framework, which validates and processes incoming data. The SQLite database stores student and project registration details. Frontend and backend communicate using JSON over HTTP.
@@ -24,32 +24,62 @@ REST APIs are created using Django REST Framework and consumed by the React fron
 
 ## Installation and Setup
 Clone the repository and navigate into the project directory:
+
 ```bash
 git clone https://github.com/riddhiiee/VIP-EPICS-Project-Portal.git
 cd VIP-EPICS-Project-Portal
+````
 
-## Set up and run the Django backend:
+### Set up and run the Django backend
+
+```bash
 cd backend
 python -m venv venv
-source venv/bin/activate     # On Windows: venv\Scripts\activate
+# On Linux/macOS
+source venv/bin/activate
+# On Windows
+venv\Scripts\activate
+
 pip install -r requirements.txt
 python manage.py migrate
 python manage.py runserver
+```
 
-## Set up and run the React frontend:
+### Set up and run the React frontend
+
+```bash
 cd frontend
 npm install
 npm start
+```
 
 ## Usage
+
 Start the Django backend server, then start the React frontend. Open the application in a web browser where students can register for available project categories. All submitted data is stored securely in the SQLite database.
 
 ## Database Design
+
 The SQLite database stores student information, project category details, and registration records required for the portal.
 
 ## Key Learnings
-This project provides hands-on experience in full-stack development using Django and React, building REST APIs with Django REST Framework, integrating frontend and backend systems, managing databases using SQLite, and developing scalable academic web applications.
+
+This project provides hands-on experience in:
+
+* Full-stack development using Django and React
+* Building REST APIs with Django REST Framework
+* Integrating frontend and backend systems
+* Managing databases using SQLite
+* Developing scalable academic web applications
 
 ## Future Enhancements
-Future improvements include adding user authentication and authorization, admin and faculty dashboards, project approval workflows, migrating to PostgreSQL or MySQL, and deploying the application on the cloud.
+
+Future improvements include:
+
+* Adding user authentication and authorization
+* Admin and faculty dashboards
+* Project approval workflows
+* Migrating to PostgreSQL or MySQL
+* Deploying the application on the cloud
+
+```
 
