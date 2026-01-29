@@ -82,4 +82,3 @@ Future improvements include:
 * Deploying the application on the cloud
 
 ```
-
